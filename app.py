@@ -27,22 +27,13 @@ st.markdown("To begin up load your chat file")
 #link to how to upload chat file
 
 #Widget to upload file
-
-def file_selector(folder_path='.'):
-    filenames = os.listdir(folder_path)
-    selected_filename = st.selectbox('Select a file', filenames)
-    return os.path.join(folder_path, selected_filename)
-
-filename = file_selector()
-st.write('You selected `%s`' % filename)
-
+uploaded_file = st.file_uploader("Choose a txt file", type="txt")
 
 #Py code to transform to data frame
+chat = []
+for line in uploaded_file:
+    chat.append(line)
 
-with open(filename, encoding="utf8") as file_in:
-    chat = []
-    for line in file_in:
-        chat.append(line)
 
 ###shome kind of data cache
 #@st.cache
