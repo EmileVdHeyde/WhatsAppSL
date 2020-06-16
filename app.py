@@ -49,6 +49,8 @@ for k in range(len(chat)):
     res = re.findall(r'\[.*?\]', chat[k])
     if len(res)==0 :
           continue
+    if chat[k].count(':') <3 :
+          continue
     res2=res[0].strip('[]')
     date=res2.split(',')[0]
     time=res2.split(',')[1]
