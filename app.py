@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 15 10:29:05 2020
+Created on Mon Jun 26 
 
 @author: EmileVDH
 """
@@ -25,6 +25,14 @@ st.title("WhatsApp Analysis Tool")
 st.header("Welcome Let do some cool stuff ")
 st.markdown("To begin up load your chat file")
 #link to how to upload chat file
+
+#################################################################
+##for debugging import data manually
+with open("Quizo_chat.txt", encoding="utf8") as file_in:
+    chat = []
+    for line in file_in:
+        chat.append(line)
+#################################################################
 
 #Widget to upload file
 uploaded_file = st.file_uploader("Choose a txt file", type="txt")
@@ -103,149 +111,218 @@ df['Response_Time'] = df['DateTime'] - df['Previous_Any_lagged_DT']
 
 #1 show unique plates names
 st.header("Who is in this Data? ")
-#st.dataframe(df['Name'].unique())
-a=list(df['Name'].unique())
+st.text(df['Name'].unique())
 
-st.write(a[0] )
-st.write(a[1] )
 
 #2 show date range 
+
 st.header("What is the Date Range? ")
-st.text(df['DateTimeString'].head(1))
-st.text(df['DateTimeString'].tail(1))
+st.text(df['DateTimeString'].head(1).to_list())
+st.text(df['DateTimeString'].tail(1).to_list())
 
 #3 Show Monthy messages Chart 
 st.header("How Often Do you message? ")
 dw  = pd.DataFrame(df.groupby(['DateYM','Name'])['Content'].count())
 dw = dw.reset_index()
-line = alt.Chart(dw).mark_line().encode(
+option = st.multiselect( 'Who do you want to see?', dw['Name'].unique())
+
+
+line = alt.Chart(dw[dw.Name.isin(option)]).mark_line().encode(
     x='DateYM',
     y='Content',
-    color='Name'
-)
+    color='Name' 
+).properties(
+    width=700,
+    height=400 )
 st.altair_chart(line)
-
 
 #4 Show Monthy average words per message Chart
 st.header("Average words Per Message over Time? ")
 dw  = pd.DataFrame(df.groupby(['DateYM','Name'])['WordCount'].mean())
 dw = dw.reset_index()
-line = alt.Chart(dw).mark_line().encode(
+
+
+line = alt.Chart(dw[dw.Name.isin(option)]).mark_line().encode(
     x='DateYM',
     y='WordCount',
-    color='Name'
-)
+    color='Name' 
+).properties(
+    width=700,
+    height=400 )
 st.altair_chart(line)
 
-
-#Create word counts splits and TWO data frames Data Frames
+#######################################################3
+#Create word counts splits and N-amount of data frames.
+  #to display N - amount of clouds 
+  #Minimum is to show only the selected one 
+  #best is to show n about and alow to quicly compare. 
 
 from spacy.lang.en.stop_words import STOP_WORDS
 import collections
 import itertools
-
 stopwords = set(STOP_WORDS) 
 
-comment_words = '' 
-for val in df.loc[df['Name'] == a[0] ]['text_clean']: 
+List_of_names =list(df['Name'].unique()) ## list to iterate through
+len(List_of_names)
+ ## total iterations
+#for each we need dfAs for graph // comment_words_A for word cloud
+
+
+###Create function for Comment WORDS (lIST OF WORDS SPEARTLY)
+def FuncComWords(NAMEVAR):
+    comment_words = '' 
+    for val in df.loc[df['Name'] == NAMEVAR]['text_clean']: 
       
     # typecaste each val to string 
-    val = str(val) 
+        val = str(val) 
   
     # split the value 
-    tokens = val.split() 
+        tokens = val.split() 
       
     # Converts each token into lowercase 
-    for i in range(len(tokens)): 
-        tokens[i] = tokens[i].lower() 
+        for i in range(len(tokens)): 
+            tokens[i] = tokens[i].lower() 
       
-    comment_words += " ".join(tokens)+" "
- 
-comment_words_A=comment_words
-z=comment_words.split()
-all_words_no_urls = list(itertools.chain(z))
-counts_no_urls = collections.Counter(all_words_no_urls)
+        comment_words += " ".join(tokens)+" "
+    BigCW['Name'].append(NAMEVAR)
+    BigCW['comment_words'].append(comment_words)
+  ## return(comment_words)
+        
+####end of function ##################################### 
 
-dfA = pd.DataFrame(counts_no_urls.most_common(),
-                             columns=['words', 'count'])
+#Populate the dictionary by parsing all the names into the function 
+
+BigCW={'Name':[],'comment_words':[]}
+for n in range(len(List_of_names)):
+   nn=''
+   nn=List_of_names[n]
+   FuncComWords(nn)
+   print(nn)
+
+ndf=pd.DataFrame(BigCW)
+
+##len(ndf)
+##ndf['Name'].unique()
+##ndf.iloc[5]
+#ndf.iloc[1]['Name']
+#ndf.iloc[1]['comment_words']
+#
+##Tables created used later   
+#
+##INTO A LIST 
+#comment_words_A=ndf.iloc[1]['comment_words']
+##SPLITS INTO INDIVIDULA WORDS
+#z=comment_words_A.split()
+#
+##Not sure what this does
+#all_words_no_urls = list(itertools.chain(z))
+#
+##Does a count of each word 
+#counts_no_urls = collections.Counter(all_words_no_urls)
+#
+##all words 
+#dfA = pd.DataFrame(counts_no_urls.most_common(),
+#                             columns=['words', 'count'])
+#
+##smaller version of top 50 words
+#dfAs = pd.DataFrame(counts_no_urls.most_common(50),
+#                             columns=['words', 'count'])
+
+##############################################################
+#Create a table that has the Name of person , words , word count and top 50 or not 
+
+#Big Split of words 
+
+d = pd.DataFrame()
 
 
-dfAs = pd.DataFrame(counts_no_urls.most_common(50),
-                             columns=['words', 'count'])
+def SplitFunction(NAMEVAR):
+    BigSW={'Word':[], 'Value':[]}
+    temp = []
+    global d
+    for val in ndf.loc[ndf['Name'] == NAMEVAR]['comment_words']:
+         #print(val) 
+         z=val.split()
+         #print(z)
+         all_words_no_urls = list(itertools.chain(z))
+         #print(all_words_no_urls)
+         counts_no_urls = dict(collections.Counter(all_words_no_urls))
+         #k=list(counts_no_urls.keys())
+         #v=list(counts_no_urls.values())
+         for key in list(counts_no_urls.keys()):
+             aKey = key
+             #print(key)
+             BigSW['Word'].append(aKey)
+         for key in list(counts_no_urls.values()):
+             aKey = key
+             #print(key)
+             BigSW['Value'].append(aKey)
+         dfall=pd.DataFrame(BigSW)
+         dfall['Name'] = NAMEVAR
+         if len(dfall)==0 :
+            d=dfall
+         else :
+           temp=dfall
+           d = pd.concat([d,temp])
+     
+        
+for n in range(len(List_of_names)):
+        nn=''
+        nn=List_of_names[n]
+        SplitFunction(nn)
+        print(nn)
 
-comment_words = '' 
-for val in df.loc[df['Name'] == a[1] ]['text_clean']: 
-      
-    # typecaste each val to string 
-    val = str(val) 
-  
-    # split the value 
-    tokens = val.split() 
-      
-    # Converts each token into lowercase 
-    for i in range(len(tokens)): 
-        tokens[i] = tokens[i].lower() 
-      
-    comment_words += " ".join(tokens)+" "
+#print(d)
 
-comment_words_B=comment_words
-z=comment_words.split()
-all_words_no_urls = list(itertools.chain(z))
-counts_no_urls = collections.Counter(all_words_no_urls)
+#######Add the counter 1 is most popular 
 
-dfB = pd.DataFrame(counts_no_urls.most_common(),
-                             columns=['words', 'count'])
+#d['Rank'] = d.groupby(by=['Name'])['Value'].transform(lambda x: x.rank())
+#d['Rank'] = df.groupby(['ticker'])['Word']\
+#                        .rank(pct=True)
+#
+#d['Rank'] = d.sort_values(['Value'], ascending=[False]) \
+#             .groupby(['Name']) \
+#             .cumcount() + 1
+#
+#dfAs=d[d.Name.isin(['Emile'])]
+#dfAs.sort_values(by='Rank', ascending=False)
+        
+######Charting ###########################################################
+        
+st.header('Most Frequent Words' )
+option2 = st.radio(
+    'Who do you want to see?',
+     List_of_names)
+
+val = st.slider('Minimum frequency of Words')
+
+dfAs=d[d.Name.isin([option2]) & (d.Value>val)]
 
 
-dfBs = pd.DataFrame(counts_no_urls.most_common(50),
-                             columns=['words', 'count'])
-
-### Bar Charts Top 50
-fig, ax = plt.subplots(figsize=(8, 8))
-st.header('Top 50 words of : ' + a[0] )
-#st.dataframe(dfA.head())
 # Plot horizontal bar graph
-dfAs.sort_values(by='count').plot.barh(x='words',
-                      y='count',
+st.header("Bar Chart of Top Words")
+fig, ax = plt.subplots(figsize=(8, 8))
+
+dfAs.sort_values(by='Value').plot.barh(x='Word',
+                      y='Value',
                       ax=ax,
                       color="purple")
 st.pyplot()
 
-st.header('Top 50 words of : ' + a[1] )
-#st.dataframe(dfB.head())
-fig, ax = plt.subplots(figsize=(8, 8))
-dfBs.sort_values(by='count').plot.barh(x='words',
-                      y='count',
-                      ax=ax,
-                      color="cyan")
-st.pyplot()
-
-
+st.header("Word Cloud ")
 
 #Word Cloud 
+dfAs_l=dfAs['Word'].str.cat(sep=' ')
 
-st.header('WordCloud of : ' + a[0] )
+
 wordcloud = WordCloud(width = 800, height = 800, 
                 background_color ='white', 
                 stopwords = stopwords, 
-                min_font_size = 10).generate(comment_words_A) 
-  
-# plot the WordCloud image                        
+                min_font_size = 10).generate(dfAs_l) 
+                      
 plt.figure(figsize = (8, 8), facecolor = None) 
 plt.imshow(wordcloud) 
 plt.axis("off") 
 plt.tight_layout(pad = 0) 
 st.pyplot()
 
-st.header('Word Cloud of : ' + a[1] )
-wordcloud = WordCloud(width = 800, height = 800, 
-                background_color ='white', 
-                stopwords = stopwords, 
-                min_font_size = 10).generate(comment_words_B) 
-  
-# plot the WordCloud image                        
-plt.figure(figsize = (8, 8), facecolor = None) 
-plt.imshow(wordcloud) 
-plt.axis("off") 
-plt.tight_layout(pad = 0) 
-st.pyplot()
