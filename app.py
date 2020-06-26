@@ -26,13 +26,7 @@ st.header("Welcome Let do some cool stuff ")
 st.markdown("To begin up load your chat file")
 #link to how to upload chat file
 
-#################################################################
-##for debugging import data manually
-with open("Quizo_chat.txt", encoding="utf8") as file_in:
-    chat = []
-    for line in file_in:
-        chat.append(line)
-#################################################################
+
 
 #Widget to upload file
 uploaded_file = st.file_uploader("Choose a txt file", type="txt")
