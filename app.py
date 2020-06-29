@@ -94,7 +94,13 @@ stop = [ "a", "about", "above", "after", "again", "against", "all", "am", "an", 
 df['text_clean'] = df['text_clean'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
 
 df['DateTimeString'] = df['Date'].str.cat(df['Time'],sep=" ")
-df['DateTime'] = df['DateTimeString'].apply(lambda x: datetime.datetime.strptime(x, '%Y/%m/%d %I:%M:%S %p'))
+
+ttest=re.search("AM$|PM$", df['DateTimeString'][0])
+if ttest : ## TRUE am or pm in it then its 12 format 
+   df['DateTime'] = df['DateTimeString'].apply(lambda x: datetime.datetime.strptime(x, '%Y/%m/%d %I:%M:%S %p'))
+else : ## FALSE 24 hour format 
+  df['DateTime'] = df['DateTimeString'].apply(lambda x: datetime.datetime.strptime(x, '%Y/%m/%d %H:%M:%S'))
+
 df['Day_name'] = df['DateTime'].dt.day_name()
 df['DateYM'] = df['DateTime'].dt.strftime('%Y%m')
 df['Previous_Any_lagged_DT'] = df['DateTime'].shift(1)
